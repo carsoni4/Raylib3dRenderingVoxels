@@ -1,1 +1,1 @@
-gcc -o main.exe main.c -IC:/raylib/raylib/build/raylib/include -LC:/raylib/raylib/build/raylib -lraylib -lopengl32 -lgdi32 -lwinmm -lkernel32
+gcc -o main.exe *.c -IC:/raylib/raylib/build/raylib/include -LC:/raylib/raylib/build/raylib -lraylib -lopengl32 -lgdi32 -lwinmm -lkernel32
