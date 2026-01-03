@@ -62,6 +62,7 @@ void initChunks()
                     {
                         for(int z = 0; z < CHUNK_WIDTH; z++)
                         {
+                            //TODO: implement a better noise
                             // simple sin heightmap
                             float freq = 0.12f;
                             float amp  = (CHUNK_HEIGHT * 0.5f);

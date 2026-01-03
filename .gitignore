@@ -1,0 +1,32 @@
+# Compiled binaries
+*.exe
+*.dll
+*.obj
+*.o
+*.lib
+*.a
+*.out
+
+# Build directories
+/build/
+/bin/
+/Debug/
+/Release/
+
+# Batch files (optional, if you don't want them in git)
+*.bat
+
+# Visual Studio / IDE files
+*.vcxproj*
+*.sln
+*.user
+*.vscode/
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+
+# Raylib shader cache or generated files
+*.rres
+*.bin

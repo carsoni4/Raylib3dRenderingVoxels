@@ -5,11 +5,13 @@
 #include "chunk.h"
 #include "mesh.h"
 
+//TODO: Move this somewhere it makes sense
 static Vector3 lastPlayerChunkPos = {0,0,0};
 static Shader fogShader = {0};
 static int fogDensityLoc = 0;
 static float fogDensity = FOG_VALUE;
 
+//TODO: Move this somewhere that makes sense. probably a player action file with setblock and getblock
 bool raycastVoxel(Camera camera, float maxDistance, Vector3 *outBlock, BlockFace *outFace)
 {
     //TODO: Cleanup the logic here
@@ -158,8 +160,7 @@ int main(void)
             setBlockAtWorld((int)highlighted.x, (int)highlighted.y, (int)highlighted.z, 1, placeFace, fogShader);
 
         UpdateCamera(&camera, CAMERA_FREE); //Update the camera every frame
-        SetShaderValue(fogShader, fogShader.locs[SHADER_LOC_VECTOR_VIEW], 
-               &camera.position.x, SHADER_UNIFORM_VEC3);
+        SetShaderValue(fogShader, fogShader.locs[SHADER_LOC_VECTOR_VIEW], &camera.position.x, SHADER_UNIFORM_VEC3);
         BeginTextureMode(target);
             ClearBackground(SKY_COLOR);
             //3D Rendering
