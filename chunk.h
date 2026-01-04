@@ -11,6 +11,11 @@ typedef struct Chunk {
     Model model;
 } Chunk;
 
+typedef enum BlockType {
+    AIR,
+    SOLID
+} BlockType;
+
 extern Chunk ***chunks;
 extern int currentRenderDistance;
 

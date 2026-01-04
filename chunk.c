@@ -74,7 +74,7 @@ void initChunks()
                             if (height < 0) height = 0;
                             if (height >= CHUNK_HEIGHT) height = CHUNK_HEIGHT - 1;
 
-                            chunks[cx][cy][cz].blocks[x][y][z] = (y <= height) ? 1 : 0;
+                            chunks[cx][cy][cz].blocks[x][y][z] = (y <= height) ? SOLID : AIR;
                         }
                     }
                 }

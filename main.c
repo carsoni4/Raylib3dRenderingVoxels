@@ -4,7 +4,9 @@
 #include "config.h"
 #include "chunk.h"
 #include "mesh.h"
+#include "character.h"
 
+//TODO: One of the shaders is doing something by pixel as fps drops significantly when resolution increases. Need to get rid of
 //TODO: Move this somewhere it makes sense
 static Vector3 lastPlayerChunkPos = {0,0,0};
 static Shader fogShader = {0};
@@ -94,6 +96,13 @@ bool raycastVoxel(Camera camera, float maxDistance, Vector3 *outBlock, BlockFace
     return false;
 }
 
+void drawUI(Vector3 highlightedBlock, Vector3 playerChunkLocation)
+{
+    DrawText("+", SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 40, CROSSHAIR_COLOR);
+    DrawText(TextFormat("%d", GetFPS()), 10, 10, 30, CROSSHAIR_COLOR);
+    DrawText(TextFormat("Highlighted Block X: %d Y: %d Z: %d", (int)player.position.x, (int)player.position.y, (int)player.position.z), 10, 50, 20, CROSSHAIR_COLOR);
+}
+
 int main(void) 
 {
     //Main Window Handling
@@ -102,23 +111,32 @@ int main(void)
     SetTargetFPS(TARGET_FPS);    
     DisableCursor();
     
-    //Map Memory and then init chunks
+    //Loading Screen
+    BeginDrawing();
+        ClearBackground(WHITE);
+        const char *LoadingText = "Loading world...";
+        DrawText(LoadingText, SCREEN_WIDTH/2 - MeasureText(LoadingText, 40)/2, SCREEN_HEIGHT/2, 40, BLACK);
+    EndDrawing();
+
+    
+    //Map Memory and then init chunk data
     allocateChunks(WORLD_SIZE_CHUNKS);
+    initChunks();
+
+    //Shader Setup
     fogShader = LoadShader("shader/fog.vs", "shader/fog.fs");
     fogShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(fogShader, "viewPos");
     fogShader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(fogShader, "matModel");
-    initChunks();
-
     fogDensityLoc = GetShaderLocation(fogShader, "fogDensity");
     SetShaderValue(fogShader, fogDensityLoc, &fogDensity, SHADER_UNIFORM_FLOAT);
 
     //Camera Setup
     Camera3D camera = {0};
-    camera.position = (Vector3){ (WORLD_SIZE_CHUNKS * CHUNK_WIDTH)/2, (float)CHUNK_HEIGHT, (WORLD_SIZE_CHUNKS * CHUNK_WIDTH)/2 };//CENTER OF WORLD
     camera.target = (Vector3){ 1.0f, 1.0f, 1.0f }; //Camera is looking here
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f }; //up-vector (rotation towards target) idrk what this means
-    camera.fovy = 90.0f; //field of view? I assume there is also an x one. Something to look into
+    camera.fovy = CAMERA_FOV;
     camera.projection = CAMERA_PERSPECTIVE;
+    spawnPlayer((Vector3){(WORLD_SIZE_CHUNKS * CHUNK_WIDTH)/2, (float)CHUNK_HEIGHT + 500, (WORLD_SIZE_CHUNKS * CHUNK_WIDTH)/2});
 
     Shader pxShader = LoadShader(0, "shader/pixelizer.fs");
     int resolutionLoc = GetShaderLocation(pxShader, "resolution");
@@ -141,6 +159,10 @@ int main(void)
 
     while(!WindowShouldClose())
     {
+        float dt = GetFrameTime();
+        applyPlayerCamera(&camera);
+        updatePlayer(dt, &camera);
+        UpdateCamera(&camera, CAMERA_FIRST_PERSON);
 
         playerChunkPos = getPlayerChunkPos(camera);
         if (playerChunkPos.x != lastPlayerChunkPos.x || playerChunkPos.z != lastPlayerChunkPos.z)
@@ -149,21 +171,15 @@ int main(void)
             lastPlayerChunkPos = playerChunkPos;
         }
 
-        if (raycastVoxel(camera, MAX_REACH, &highlighted, &placeFace))
-            casting = true;
-        else
-            casting = false;
+        casting = raycastVoxel(camera, MAX_REACH, &highlighted, &placeFace);
         
         if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && casting)
             setBlockAtWorld((int)highlighted.x, (int)highlighted.y, (int)highlighted.z, 0, FACE_NONE, fogShader);
         if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && casting)
             setBlockAtWorld((int)highlighted.x, (int)highlighted.y, (int)highlighted.z, 1, placeFace, fogShader);
-
-        UpdateCamera(&camera, CAMERA_FREE); //Update the camera every frame
         SetShaderValue(fogShader, fogShader.locs[SHADER_LOC_VECTOR_VIEW], &camera.position.x, SHADER_UNIFORM_VEC3);
         BeginTextureMode(target);
             ClearBackground(SKY_COLOR);
-            //3D Rendering
             BeginMode3D(camera);
                 // Only render chunks within render distance
                 int pcx = (int)playerChunkPos.x;
@@ -176,20 +192,16 @@ int main(void)
                         if (cx < 0 || cx >= WORLD_SIZE_CHUNKS) continue;
                         if (cz < 0 || cz >= WORLD_SIZE_CHUNKS) continue;
                         
-                        // Only draw if mesh exists
+                        //Only draw if mesh exists
                         if (chunks[cx][0][cz].mesh.vertexCount > 0)
-                        {
-                            DrawModel(chunks[cx][0][cz].model, 
-                                     (Vector3){cx * CHUNK_WIDTH, 0, cz * CHUNK_WIDTH}, 
-                                     1.0f, WHITE);
-                        }
+                            DrawModel(chunks[cx][0][cz].model, (Vector3){cx * CHUNK_WIDTH, 0, cz * CHUNK_WIDTH}, 1.0f, WHITE);
                     }
                 }                
                 if(casting) {
                     for (int s = 0; s < 4; s++) 
                     {
                         float scale = 1.0f + 0.01f * (float)s; //adjust multiplier for desired thickness
-                        DrawCubeWires((Vector3){highlighted.x + 0.5f, highlighted.y + 0.5f, highlighted.z + 0.5f}, scale * 1.0f, scale * 1.0f, scale * 1.0f, Fade(YELLOW, 1.0f - 0.15f * s));
+                        DrawCubeWires((Vector3){highlighted.x + 0.5f, highlighted.y + 0.5f, highlighted.z + 0.5f}, scale, scale, scale, Fade(CROSSHAIR_COLOR, 1.0f - 0.15f * s));
                     }
                 }
             EndMode3D();
@@ -199,10 +211,7 @@ int main(void)
             BeginShaderMode(pxShader);
                 DrawTextureRec(target.texture, (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height }, (Vector2){ 0, 0 }, WHITE);
             EndShaderMode();
-            //UI Last So Its On Top
-            DrawText(TextFormat("Highlighted Block X: %d Y: %d Z: %d", (int)highlighted.x, (int)highlighted.y, (int)highlighted.z), 10, 50, 20, SKYBLUE);
-            DrawText(TextFormat("%d", GetFPS()), 10, 10, 30, CROSSHAIR_COLOR);
-            DrawText("+", SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 40, CROSSHAIR_COLOR);
+            drawUI(highlighted, playerChunkPos);
         EndDrawing();
     }
     UnloadShader(pxShader);
