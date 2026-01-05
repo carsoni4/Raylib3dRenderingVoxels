@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #define GRAVITY -10.0f
-#define MOVEMENT_SPEED 5.0f
+#define MOVEMENT_SPEED 3.4f
 #define JUMP_FORCE 10.0f
 #define CAMERA_HEIGHT 0.5f
 

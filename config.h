@@ -17,7 +17,7 @@
 #define WORLD_SIZE_CHUNKS 100 //100 x 100 Chunk World Size
 //Shader
 #define GLSL_VERSION 330
-#define SKY_COLOR (Color){100, 100, 100, 255} //TODO: Decide on fog color
+#define SKY_COLOR SKYBLUE
 #define FOG_VALUE .0125f
 
 typedef enum BlockFace {

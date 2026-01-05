@@ -194,7 +194,7 @@ int main(void)
                         
                         //Only draw if mesh exists
                         if (chunks[cx][0][cz].mesh.vertexCount > 0)
-                            DrawModel(chunks[cx][0][cz].model, (Vector3){cx * CHUNK_WIDTH, 0, cz * CHUNK_WIDTH}, 1.0f, WHITE);
+                            DrawModel(chunks[cx][0][cz].model, (Vector3){cx * CHUNK_WIDTH, 0, cz * CHUNK_WIDTH}, 1.0f, GRAY);
                     }
                 }                
                 if(casting) {
